@@ -1,5 +1,7 @@
 use http::{HeaderMap, HeaderValue};
 use std::{collections::HashMap, vec, hash::Hash};
+
+
 pub async fn scrape(shoe_name: &str) -> (Vec<String>, Vec<String>) {
     let query_shoe_name = shoe_name.replace(" ", "+");
 
@@ -121,23 +123,12 @@ pub async fn handle_shoe_response(response: &String) -> HashMap<String,String> {
     let image_link = image_component.value().attr("src").unwrap().to_string();
     type_text.truncate(type_text.len()-model_text.len());
    
-
-
-   shoe_info.insert("description".to_string(), description_text);
-   shoe_info.insert("name".to_string(), name_text);
-   shoe_info.insert("type".to_string(), type_text);
-   shoe_info.insert("model".to_string(), model_text);
+    shoe_info.insert("description".to_string(), description_text);
+    shoe_info.insert("name".to_string(), name_text);
+    shoe_info.insert("type".to_string(), type_text);
+    shoe_info.insert("model".to_string(), model_text);
     shoe_info.insert("image".to_string(), image_link);
     println!("{shoe_info:?}");
-   
- 
-
-
-    
-   
-    
-
-   
    
     shoe_info
 }
