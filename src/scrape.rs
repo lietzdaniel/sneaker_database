@@ -98,7 +98,12 @@ pub async fn handle_shoe_response(response: &String) -> HashMap<String,String> {
    
     let image_selector = scraper::Selector::parse("img.chakra-image.css-g98gbd").unwrap();
     
-    let description_component = document.select(&description_selector).next().unwrap();
+    let description_component = document.select(&description_selector).next();
+    let description_text: String;
+    match description_component {
+        Some(description) => description_text = description.text().collect::<String>(),
+        None => description_text = String::new()
+    }
     let type_component = document.select(&type_selector).next().unwrap();
     let model_component = document.select(&model_selector).next().unwrap();
     
@@ -114,7 +119,7 @@ pub async fn handle_shoe_response(response: &String) -> HashMap<String,String> {
         
     }
 
-    let description_text = description_component.text().collect::<String>();
+  
     let name_text = name_component.text().collect::<String>();
     let mut type_text = type_component.text().collect::<String>();
     let model_text = model_component.text().collect::<String>();
