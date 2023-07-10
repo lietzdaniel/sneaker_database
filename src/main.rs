@@ -1,5 +1,5 @@
 mod scrape;
-use rusqlite::{Connection, Result};
+use rusqlite::{params, Connection, Result};
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -16,7 +16,7 @@ async fn main() -> Result<()> {
         release_date TIMESTAMP NOT NULL,
         retail_price INTEGER,
         extras TEXT,
-        description TEXT NOT NULL
+        description TEXT 
     );",
         [],
     )?;
@@ -43,7 +43,7 @@ async fn main() -> Result<()> {
             .expect("Failed to read line");
         match input_line.trim().parse::<u8>() {
             Ok(number) => match number {
-                1 => add_shoe().await,
+                1 => return add_shoe().await,
                 2 => todo!(),
                 3 => todo!(),
                 4 => todo!(),
@@ -59,7 +59,7 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-pub async fn add_shoe() -> () {
+pub async fn add_shoe() -> Result<()> {
     'mainloop: loop {
         println!("/*--------------------------------------------------ADDING SHOE--------------------------------------------------*/");
         println!("Which shoe do you want to search for?");
@@ -88,18 +88,28 @@ pub async fn add_shoe() -> () {
                 .read_line(&mut input_int)
                 .expect("Failed to read line");
 
-            let mut input_str = input_int.clone();
+            let input_str = input_int.clone();
 
             match input_int.trim().parse::<u8>() {
                 Ok(number) => {
                     if number > link_vec.len() as u8 || number == 0 {
                         continue;
                     }
-                    scrape::get_shoe_info(&link_vec[number as usize]).await;
+                    let shoe_info = scrape::get_shoe_info(&link_vec[number as usize]).await;
+                    println!("{shoe_info:?}");
+                    let conn = Connection::open("shoes.db")?;
+                    conn.execute("INSERT INTO shoes (style_id, name, type, model, colorway, image, release_date,retail_price,extras,description) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
+                    params![shoe_info.get("style_id"),shoe_info.get("name"),shoe_info.get("type"),shoe_info.get("model"),shoe_info.get("colorway"),shoe_info.get("image"),shoe_info.get("release_date"),shoe_info.get("retail_price"),shoe_info.get("extras"),shoe_info.get("description")])?;
 
+                    println!(
+                        "Successfully added {} to your database!",
+                        shoe_info.get("name").unwrap()
+                    );
+                    
                     break 'mainloop;
+                    todo!("Add Prices!");
                 }
-                Err(e) => {
+                Err(_) => {
                     if input_str.len() == 2 && input_str.chars().nth(0).unwrap() == 'm' {
                         show_more = true;
                         continue 'showmore;
@@ -110,4 +120,5 @@ pub async fn add_shoe() -> () {
             }
         }
     }
+    Ok(())
 }

@@ -86,7 +86,7 @@ pub async fn get_shoe_info(links: &String) -> HashMap<String, String> {
 }
 
 pub async fn handle_shoe_response(response: &String) -> HashMap<String, String> {
-    let mut info_vec: Vec<String> = Vec::new();
+
     let mut shoe_info = HashMap::new();
 
     let document = scraper::Html::parse_document(response);
@@ -119,10 +119,13 @@ pub async fn handle_shoe_response(response: &String) -> HashMap<String, String> 
         .select(&key_selector)
         .zip(document.select(&data_selector))
     {
+        //TODO: Convert retail_price to Int
+
+
         let mut key = key_element.text().collect::<String>();
         match key.as_str() {
-            "Style" => key = "style-id".to_string(),
-            "Release Date" => key = "release-date".to_string(),
+            "Style" => key = "style_id".to_string(),
+            "Release Date" => key = "release_date".to_string(),
             "Colourway" => key = "colorway".to_string(),
             "Retail Price" => key = "retail_price".to_string(),
             "Accessories Included" => key = "extras".to_string(),
@@ -143,7 +146,6 @@ pub async fn handle_shoe_response(response: &String) -> HashMap<String, String> 
     shoe_info.insert("type".to_string(), type_text);
     shoe_info.insert("model".to_string(), model_text);
     shoe_info.insert("image".to_string(), image_link);
-    println!("{shoe_info:?}");
 
     shoe_info
 }
