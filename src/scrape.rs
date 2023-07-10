@@ -101,36 +101,37 @@ pub async fn handle_shoe_response(response: &String) -> HashMap<String, String> 
         scraper::Selector::parse("span[data-component=secondary-product-title]").unwrap();
 
     let image_selector = scraper::Selector::parse("img.chakra-image.css-g98gbd").unwrap();
-    
+
     let description_component = document.select(&description_selector).next();
     let description_text: String;
     match description_component {
         Some(description) => description_text = description.text().collect::<String>(),
-        None => description_text = String::new()
+        None => description_text = String::new(),
     }
 
-    let description_component = document.select(&description_selector).next().unwrap();
     let type_component = document.select(&type_selector).next().unwrap();
     let model_component = document.select(&model_selector).next().unwrap();
 
     let name_component = document.select(&name_selector).next().unwrap();
     let image_component = document.select(&image_selector).next().unwrap();
-    let keys = [
-        "style-id",
-        "colorway",
-        "retail_price",
-        "release_date",
-        "extras",
-    ];
-    for (idx, element) in document.select(&data_selector).enumerate() {
-        if idx >= keys.len() {
-            shoe_info.insert("extras".to_string(), "".to_string()); //Extras is optional, so it may not be found
-            break;
+    let key_selector = scraper::Selector::parse("span.chakra-text.css-1px41cy").unwrap();
+    for (key_element, content_element) in document
+        .select(&key_selector)
+        .zip(document.select(&data_selector))
+    {
+        let mut key = key_element.text().collect::<String>();
+        match key.as_str() {
+            "Style" => key = "style-id".to_string(),
+            "Release Date" => key = "release-date".to_string(),
+            "Colourway" => key = "colorway".to_string(),
+            "Retail Price" => key = "retail_price".to_string(),
+            "Accessories Included" => key = "extras".to_string(),
+            _ => key = key,
         }
-        shoe_info.insert(keys[idx].to_string(), element.text().collect::<String>());
+        let value = content_element.text().collect::<String>();
+        shoe_info.insert(key, value);
     }
 
-  
     let name_text = name_component.text().collect::<String>();
     let mut type_text = type_component.text().collect::<String>();
     let model_text = model_component.text().collect::<String>();
