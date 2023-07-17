@@ -13,8 +13,10 @@ async fn main() -> Result<()> {
         model TEXT NOT NULL,
         colorway TEXT NOT NULL,
         image TEXT NOT NULL,
+        size INTEGER NOT NULL,
         release_date TIMESTAMP NOT NULL,
         retail_price INTEGER,
+        last_sold_price INTEGER,
         extras TEXT,
         description TEXT 
     );",
@@ -95,18 +97,22 @@ pub async fn add_shoe() -> Result<()> {
                     if number > link_vec.len() as u8 || number == 0 {
                         continue;
                     }
+                    println!("What Size is the shoe you want to add in?");
+                    let size = get_shoe_size().await;
                     let shoe_info = scrape::get_shoe_info(&link_vec[number as usize]).await;
                     println!("{shoe_info:?}");
                     let conn = Connection::open("shoes.db")?;
-                    conn.execute("INSERT INTO shoes (style_id, name, type, model, colorway, image, release_date,retail_price,extras,description) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
-                    params![shoe_info.get("style_id"),shoe_info.get("name"),shoe_info.get("type"),shoe_info.get("model"),shoe_info.get("colorway"),shoe_info.get("image"),shoe_info.get("release_date"),shoe_info.get("retail_price"),shoe_info.get("extras"),shoe_info.get("description")])?;
+      
+                    conn.execute("INSERT INTO shoes (style_id, name, type, model, colorway, image,size, release_date,retail_price,last_sold_price,extras,description) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)",
+                    params![shoe_info.get("style_id"),shoe_info.get("name"),shoe_info.get("type"),shoe_info.get("model"),shoe_info.get("colorway"),shoe_info.get("image"),size,shoe_info.get("release_date"),shoe_info.get("retail_price"),shoe_info.get("price"),shoe_info.get("extras"),shoe_info.get("description")])?;
+
                     //TODO: Captcha blocked
-                    //let price_file = scrape::get_prices(&link_vec[number as usize]).await;
+                    //let _ = scrape::get_prices(&link_vec[number as usize]).await; NOTE: UNIMPLEMENTED
                     println!(
                         "Successfully added {} to your database!",
                         shoe_info.get("name").unwrap()
                     );
-                    
+
                     break 'mainloop;
                     //TODO Add Prices
                 }
@@ -122,4 +128,56 @@ pub async fn add_shoe() -> Result<()> {
         }
     }
     Ok(())
+}
+
+async fn get_shoe_size() -> String {
+    loop {
+        
+        let mut input = String::new();
+        std::io::stdin()
+            .read_line(&mut input)
+            .expect("Failed to read line");
+        let mut input_size = String::new();
+        if input.ends_with("\n") {
+           input_size = input.trim_end_matches("\n").to_string();
+        } else {
+            input_size = input;
+        }
+     
+        if input_size.len() > 4 {
+            println!("Please enter a valid size! Too long");
+            continue;
+        }
+        let split_on_dot = input_size.split(".").collect::<Vec<&str>>();
+        let mut string_builder = String::new();
+        if split_on_dot.len() > 2 {
+            println!("Please enter a valid size! too much split dot");
+            continue;
+        } else {
+            match split_on_dot[0].trim().parse::<u32>() {
+                Ok(_) => {
+                    if split_on_dot[0].len() <= 2 {
+                        string_builder.push_str(split_on_dot[0]);
+                    } else {
+                        println!("{split_on_dot:?}");
+                        println!("Please enter a valid size! too short of a number");
+                        continue;
+                    }
+                }
+                Err(_) => {
+                    println!("Please enter a valid size! not a number");
+                    continue;
+                }
+            }
+
+            if split_on_dot.len() == 2 {
+                if split_on_dot[1] != "5" {
+                    println!("Please enter a valid size! not 5");
+                    continue;
+                }
+            }
+            return string_builder;
+        }
+    }
+
 }

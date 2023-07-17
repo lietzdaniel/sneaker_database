@@ -1,9 +1,9 @@
 use http::{HeaderMap, HeaderValue};
-use serde_json::json;
 use std::collections::HashMap;
+
+
 pub async fn scrape(shoe_name: &str) -> (Vec<String>, Vec<String>) {
     let query_shoe_name = shoe_name.replace(" ", "+");
-
     let mut headers = HeaderMap::new();
     headers.insert("User-Agent", HeaderValue::from_str("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.138 Safari/537.36").unwrap());
     headers.insert("accept", HeaderValue::from_str("application/json").unwrap());
@@ -100,7 +100,7 @@ pub async fn handle_shoe_response(response: &String) -> HashMap<String, String> 
         scraper::Selector::parse("span[data-component=secondary-product-title]").unwrap();
 
     let image_selector = scraper::Selector::parse("img.chakra-image.css-g98gbd").unwrap();
-
+    let price_selector = scraper::Selector::parse("p.chakra-text.css-13uklb6").unwrap();
     let description_component = document.select(&description_selector).next();
     let description_text: String;
     match description_component {
@@ -110,7 +110,7 @@ pub async fn handle_shoe_response(response: &String) -> HashMap<String, String> 
 
     let type_component = document.select(&type_selector).next().unwrap();
     let model_component = document.select(&model_selector).next().unwrap();
-
+    let price_component = document.select(&price_selector).next().unwrap();
     let name_component = document.select(&name_selector).next().unwrap();
     let image_component = document.select(&image_selector).next().unwrap();
     let key_selector = scraper::Selector::parse("span.chakra-text.css-1px41cy").unwrap();
@@ -132,7 +132,7 @@ pub async fn handle_shoe_response(response: &String) -> HashMap<String, String> 
         let value = content_element.text().collect::<String>();
         shoe_info.insert(key, value);
     }
-
+    let price_text = price_component.text().collect::<String>();
     let name_text = name_component.text().collect::<String>();
     let mut type_text = type_component.text().collect::<String>();
     let model_text = model_component.text().collect::<String>();
@@ -144,47 +144,49 @@ pub async fn handle_shoe_response(response: &String) -> HashMap<String, String> 
     shoe_info.insert("type".to_string(), type_text);
     shoe_info.insert("model".to_string(), model_text);
     shoe_info.insert("image".to_string(), image_link);
-
+    shoe_info.insert("price".to_string(), price_text);
     shoe_info
 }
 
 pub async fn get_prices(links: &String) -> Option<String> {
-    println!("{}", links);
-    let query = links.split("/").collect::<Vec<&str>>()[2];
+    unimplemented!("NOT WORKING DUE TO missing API");
+    // println!("{}", links);
+    // let query = links.split("/").collect::<Vec<&str>>()[2];
 
-    let post_form = json!(
-     {
-         "operationName":"GetMarketData",
-         "query":"query GetMarketData($id: String!, $currencyCode: CurrencyCode, $countryCode: String!, $marketName: String) {\n  product(id: $id) {\n    id\n    urlKey\n    market(currencyCode: $currencyCode) {\n      bidAskData(country: $countryCode, market: $marketName) {\n        highestBid\n        highestBidSize\n        lowestAsk\n        lowestAskSize\n      }\n    }\n    variants {\n      id\n      market(currencyCode: $currencyCode) {\n        bidAskData(country: $countryCode, market: $marketName) {\n          highestBid\n          highestBidSize\n          lowestAsk\n          lowestAskSize\n        }\n      }\n    }\n    ...BidButtonFragment\n    ...BidButtonContentFragment\n    ...BuySellFragment\n    ...BuySellContentFragment\n    ...XpressAskPDPFragment\n  }\n}\n\nfragment BidButtonFragment on Product {\n  id\n  title\n  urlKey\n  sizeDescriptor\n  productCategory\n  market(currencyCode: $currencyCode) {\n    bidAskData(country: $countryCode, market: $marketName) {\n      highestBid\n      highestBidSize\n      lowestAsk\n      lowestAskSize\n    }\n  }\n  media {\n    imageUrl\n  }\n  variants {\n    id\n    market(currencyCode: $currencyCode) {\n      bidAskData(country: $countryCode, market: $marketName) {\n        highestBid\n        highestBidSize\n        lowestAsk\n        lowestAskSize\n      }\n    }\n  }\n}\n\nfragment BidButtonContentFragment on Product {\n  id\n  urlKey\n  sizeDescriptor\n  productCategory\n  lockBuying\n  lockSelling\n  minimumBid(currencyCode: $currencyCode)\n  market(currencyCode: $currencyCode) {\n    bidAskData(country: $countryCode, market: $marketName) {\n      highestBid\n      highestBidSize\n      lowestAsk\n      lowestAskSize\n      numberOfAsks\n    }\n  }\n  variants {\n    id\n    market(currencyCode: $currencyCode) {\n      bidAskData(country: $countryCode, market: $marketName) {\n        highestBid\n        highestBidSize\n        lowestAsk\n        lowestAskSize\n        numberOfAsks\n      }\n    }\n  }\n}\n\nfragment BuySellFragment on Product {\n  id\n  title\n  urlKey\n  sizeDescriptor\n  productCategory\n  lockBuying\n  lockSelling\n  market(currencyCode: $currencyCode) {\n    bidAskData(country: $countryCode, market: $marketName) {\n      highestBid\n      highestBidSize\n      lowestAsk\n      lowestAskSize\n    }\n  }\n  media {\n    imageUrl\n  }\n  variants {\n    id\n    market(currencyCode: $currencyCode) {\n      bidAskData(country: $countryCode, market: $marketName) {\n        highestBid\n        highestBidSize\n        lowestAsk\n        lowestAskSize\n      }\n    }\n  }\n}\n\nfragment BuySellContentFragment on Product {\n  id\n  urlKey\n  sizeDescriptor\n  productCategory\n  lockBuying\n  lockSelling\n  market(currencyCode: $currencyCode) {\n    bidAskData(country: $countryCode, market: $marketName) {\n      highestBid\n      highestBidSize\n      lowestAsk\n      lowestAskSize\n    }\n  }\n  variants {\n    id\n    market(currencyCode: $currencyCode) {\n      bidAskData(country: $countryCode, market: $marketName) {\n        highestBid\n        highestBidSize\n        lowestAsk\n        lowestAskSize\n      }\n    }\n  }\n}\n\nfragment XpressAskPDPFragment on Product {\n  market(currencyCode: $currencyCode) {\n    state(country: $countryCode) {\n      numberOfCustodialAsks\n    }\n  }\n  variants {\n    market(currencyCode: $currencyCode) {\n      state(country: $countryCode) {\n        numberOfCustodialAsks\n      }\n    }\n  }\n})",
-         "variables":{
-             "id":query,
-             "currencyCode":"EUR",
-             "countryCode": "DE",
-             "marketName": "null"
-         }
-     }
-    );
+    // let post_form = json!(
+    //  {
+    //      "operationName":"GetMarketData",
+    //      "query":"query GetMarketData($id: String!, $currencyCode: CurrencyCode, $countryCode: String!, $marketName: String) {\n  product(id: $id) {\n    id\n    urlKey\n    market(currencyCode: $currencyCode) {\n      bidAskData(country: $countryCode, market: $marketName) {\n        highestBid\n        highestBidSize\n        lowestAsk\n        lowestAskSize\n      }\n    }\n    variants {\n      id\n      market(currencyCode: $currencyCode) {\n        bidAskData(country: $countryCode, market: $marketName) {\n          highestBid\n          highestBidSize\n          lowestAsk\n          lowestAskSize\n        }\n      }\n    }\n    ...BidButtonFragment\n    ...BidButtonContentFragment\n    ...BuySellFragment\n    ...BuySellContentFragment\n    ...XpressAskPDPFragment\n  }\n}\n\nfragment BidButtonFragment on Product {\n  id\n  title\n  urlKey\n  sizeDescriptor\n  productCategory\n  market(currencyCode: $currencyCode) {\n    bidAskData(country: $countryCode, market: $marketName) {\n      highestBid\n      highestBidSize\n      lowestAsk\n      lowestAskSize\n    }\n  }\n  media {\n    imageUrl\n  }\n  variants {\n    id\n    market(currencyCode: $currencyCode) {\n      bidAskData(country: $countryCode, market: $marketName) {\n        highestBid\n        highestBidSize\n        lowestAsk\n        lowestAskSize\n      }\n    }\n  }\n}\n\nfragment BidButtonContentFragment on Product {\n  id\n  urlKey\n  sizeDescriptor\n  productCategory\n  lockBuying\n  lockSelling\n  minimumBid(currencyCode: $currencyCode)\n  market(currencyCode: $currencyCode) {\n    bidAskData(country: $countryCode, market: $marketName) {\n      highestBid\n      highestBidSize\n      lowestAsk\n      lowestAskSize\n      numberOfAsks\n    }\n  }\n  variants {\n    id\n    market(currencyCode: $currencyCode) {\n      bidAskData(country: $countryCode, market: $marketName) {\n        highestBid\n        highestBidSize\n        lowestAsk\n        lowestAskSize\n        numberOfAsks\n      }\n    }\n  }\n}\n\nfragment BuySellFragment on Product {\n  id\n  title\n  urlKey\n  sizeDescriptor\n  productCategory\n  lockBuying\n  lockSelling\n  market(currencyCode: $currencyCode) {\n    bidAskData(country: $countryCode, market: $marketName) {\n      highestBid\n      highestBidSize\n      lowestAsk\n      lowestAskSize\n    }\n  }\n  media {\n    imageUrl\n  }\n  variants {\n    id\n    market(currencyCode: $currencyCode) {\n      bidAskData(country: $countryCode, market: $marketName) {\n        highestBid\n        highestBidSize\n        lowestAsk\n        lowestAskSize\n      }\n    }\n  }\n}\n\nfragment BuySellContentFragment on Product {\n  id\n  urlKey\n  sizeDescriptor\n  productCategory\n  lockBuying\n  lockSelling\n  market(currencyCode: $currencyCode) {\n    bidAskData(country: $countryCode, market: $marketName) {\n      highestBid\n      highestBidSize\n      lowestAsk\n      lowestAskSize\n    }\n  }\n  variants {\n    id\n    market(currencyCode: $currencyCode) {\n      bidAskData(country: $countryCode, market: $marketName) {\n        highestBid\n        highestBidSize\n        lowestAsk\n        lowestAskSize\n      }\n    }\n  }\n}\n\nfragment XpressAskPDPFragment on Product {\n  market(currencyCode: $currencyCode) {\n    state(country: $countryCode) {\n      numberOfCustodialAsks\n    }\n  }\n  variants {\n    market(currencyCode: $currencyCode) {\n      state(country: $countryCode) {\n        numberOfCustodialAsks\n      }\n    }\n  }\n})",
+    //      "variables":{
+    //          "id":query,
+    //          "currencyCode":"EUR",
+    //          "countryCode": "DE",
+    //          "marketName": "null"
+    //      }
+    //  }
+    // );
 
-    let mut headers = HeaderMap::new();
-    headers.insert("User-Agent", HeaderValue::from_str("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.138 Safari/537.36").unwrap());
+    // let mut headers = HeaderMap::new();
+    // headers.insert("User-Agent", HeaderValue::from_str("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.138 Safari/537.36").unwrap());
 
-    println!("{:?}", post_form);
+    // println!("{:?}", post_form);
 
-    let client = reqwest::Client::builder().build().unwrap();
-    let result = client
-        .post("https://stockx.com/api/p/e")
-        .json(&post_form)
-        .headers(headers)
-        .send()
-        .await;
-    match result {
-        Ok(result_json) => {
-            println!("{}", result_json.text().await.unwrap());
-            return None;
-        }
-        Err(_) => {
-            println!("Something went wrong getting the prices.");
-            return None;
-        }
-    }
+    // let client = reqwest::Client::builder().build().unwrap();
+    // let result = client
+    //     .post("https://stockx.com/api/p/e")
+
+    //     .json(&post_form)
+    //     .headers(headers)
+    //     .send()
+    //     .await;
+    // match result {
+    //     Ok(result_json) => {
+    //         println!("{}", result_json.text().await.unwrap());
+    //         return None;
+    //     }
+    //     Err(_) => {
+    //         println!("Something went wrong getting the prices.");
+    //         return None;
+    //     }
+    // }
 }
