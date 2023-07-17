@@ -100,14 +100,15 @@ pub async fn add_shoe() -> Result<()> {
                     let conn = Connection::open("shoes.db")?;
                     conn.execute("INSERT INTO shoes (style_id, name, type, model, colorway, image, release_date,retail_price,extras,description) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
                     params![shoe_info.get("style_id"),shoe_info.get("name"),shoe_info.get("type"),shoe_info.get("model"),shoe_info.get("colorway"),shoe_info.get("image"),shoe_info.get("release_date"),shoe_info.get("retail_price"),shoe_info.get("extras"),shoe_info.get("description")])?;
-
+                    //TODO: Captcha blocked
+                    //let price_file = scrape::get_prices(&link_vec[number as usize]).await;
                     println!(
                         "Successfully added {} to your database!",
                         shoe_info.get("name").unwrap()
                     );
                     
                     break 'mainloop;
-                    todo!("Add Prices!");
+                    //TODO Add Prices
                 }
                 Err(_) => {
                     if input_str.len() == 2 && input_str.chars().nth(0).unwrap() == 'm' {
