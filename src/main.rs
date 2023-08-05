@@ -13,10 +13,10 @@ async fn main() -> Result<()> {
         model TEXT NOT NULL,
         colorway TEXT NOT NULL,
         image TEXT NOT NULL,
-        size INTEGER NOT NULL,
+        size TEXT NOT NULL,
         release_date TIMESTAMP NOT NULL,
-        retail_price INTEGER,
-        last_sold_price INTEGER,
+        retail_price TEXT NOT NULL,
+        last_sold_price TEXT,
         extras TEXT,
         description TEXT 
     );",
@@ -36,8 +36,9 @@ async fn main() -> Result<()> {
         println!("[1]   Search for a shoe to add to the database");
         println!("[2]   Make a custom entry in the database");
         println!("[3]   Remove a shoe from the database");
-        println!("[4]   Get fun facts about your collection");
-        println!("[5]   Quit the database manager");
+        println!("[4]   Show your shoe database");
+        println!("[5]   Get fun facts about your collection");
+        println!("[6]   Quit the database manager");
 
         let mut input_line = String::new();
         std::io::stdin()
@@ -48,8 +49,9 @@ async fn main() -> Result<()> {
                 1 => return add_shoe().await,
                 2 => todo!(),
                 3 => todo!(),
-                4 => todo!(),
-                5 => break,
+                4 => return show_database(),
+                5 => todo!(),
+                6 => break,
                 _ => continue,
             },
             Err(_) => {
@@ -59,6 +61,68 @@ async fn main() -> Result<()> {
         }
     }
     Ok(())
+}
+
+pub fn show_database() -> Result<()>{
+    let conn = Connection::open("shoes.db")?;
+    let mut stmt = conn.prepare(
+        "SELECT * from shoes"
+    )?;
+    #[derive(Debug)]
+    struct Shoe {
+        style_id: String,
+        name: String,
+        shoe_type: String,
+        model: String,
+        colorway:String,
+        image: String,
+        size: String,
+        release_date: String,
+        retail_price: String,
+        last_sold_price: String,
+        extras: String,
+        description: String,
+    }
+   
+    let shoes = stmt.query_map([], |row| {
+        Ok(Shoe {
+            style_id: row.get(1)?,
+            name: row.get(2)?,
+            shoe_type: row.get(3)?,
+            model: row.get(4)?,
+            colorway: row.get(5)?,
+            image : row.get(6)?,
+            size: row.get(7)?,
+            release_date: row.get(8)?,
+            retail_price: row.get(9)?,
+            last_sold_price: row.get(10).unwrap_or("".to_string()),
+            extras: row.get(11).unwrap_or("".to_string()),
+            description: row.get(12).unwrap_or("".to_string()),
+        })
+    })?; 
+    println!("+------------+---------------------------------------------------------------+---------+------+");
+    println!("|  Style ID  |                            Name                               |  Price  | Size |");
+    println!("+------------+---------------------------------------------------------------+---------+------+");
+    for shoe in shoes {
+      
+        match shoe {
+            Ok(success_shoe) =>  println!("| {} | {} | {} | {} |", fill_string_with_space(success_shoe.style_id, 10),fill_string_with_space(success_shoe.name, 61),fill_string_with_space(success_shoe.retail_price, 7),fill_string_with_space(success_shoe.size.to_string(), 4)),
+            Err(e) => {
+                println!("{e}");
+                continue
+            }
+        }
+        
+    }
+    println!("+------------+---------------------------------------------------------------+---------+------+");
+    Ok(())
+}
+
+pub fn fill_string_with_space(mut string: String, length: usize) -> String{
+    while string.len() < length {
+        string.push_str(" ");
+    }
+    string
 }
 
 pub async fn add_shoe() -> Result<()> {
@@ -102,7 +166,7 @@ pub async fn add_shoe() -> Result<()> {
                     let shoe_info = scrape::get_shoe_info(&link_vec[number as usize]).await;
                     println!("{shoe_info:?}");
                     let conn = Connection::open("shoes.db")?;
-      
+
                     conn.execute("INSERT INTO shoes (style_id, name, type, model, colorway, image,size, release_date,retail_price,last_sold_price,extras,description) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)",
                     params![shoe_info.get("style_id"),shoe_info.get("name"),shoe_info.get("type"),shoe_info.get("model"),shoe_info.get("colorway"),shoe_info.get("image"),size,shoe_info.get("release_date"),shoe_info.get("retail_price"),shoe_info.get("price"),shoe_info.get("extras"),shoe_info.get("description")])?;
 
@@ -132,18 +196,17 @@ pub async fn add_shoe() -> Result<()> {
 
 async fn get_shoe_size() -> String {
     loop {
-        
         let mut input = String::new();
         std::io::stdin()
             .read_line(&mut input)
             .expect("Failed to read line");
         let mut input_size = String::new();
         if input.ends_with("\n") {
-           input_size = input.trim_end_matches("\n").to_string();
+            input_size = input.trim_end_matches("\n").to_string();
         } else {
             input_size = input;
         }
-     
+
         if input_size.len() > 4 {
             println!("Please enter a valid size! Too long");
             continue;
@@ -174,10 +237,12 @@ async fn get_shoe_size() -> String {
                 if split_on_dot[1] != "5" {
                     println!("Please enter a valid size! not 5");
                     continue;
+                } else {
+                    string_builder.push_str(".5");
+                   
                 }
             }
             return string_builder;
         }
     }
-
 }

@@ -1,7 +1,6 @@
 use http::{HeaderMap, HeaderValue};
 use std::collections::HashMap;
 
-
 pub async fn scrape(shoe_name: &str) -> (Vec<String>, Vec<String>) {
     let query_shoe_name = shoe_name.replace(" ", "+");
     let mut headers = HeaderMap::new();
