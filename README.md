@@ -35,7 +35,7 @@ Quits the program
 ##Django API + Frontend
 
 Django:
-`cd sneaker/webserver`
+`cd sneaker_webserver`
 `python3 manage.py migrate` (only first time to create the DB)
 `python3 manage.py runserver`
 
