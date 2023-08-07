@@ -1,5 +1,10 @@
 mod scrape;
 use rusqlite::{params, Connection, Result};
+use serde_json::json;
+
+use chrono::format::ParseError;
+use chrono::{NaiveDate, NaiveTime, NaiveDateTime, DateTime, Local, Utc};
+
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -8,6 +13,7 @@ async fn main() -> Result<()> {
         "CREATE TABLE IF NOT EXISTS shoes (
         id  INTEGER PRIMARY KEY AUTOINCREMENT,
         style_id   TEXT NOT NULL,
+        link TEXT NOT NULL,
         name TEXT NOT NULL,
         type TEXT NOT NULL,
         model TEXT NOT NULL,
@@ -71,6 +77,7 @@ pub fn show_database() -> Result<()>{
     #[derive(Debug)]
     struct Shoe {
         style_id: String,
+        link: String,
         name: String,
         shoe_type: String,
         model: String,
@@ -87,26 +94,27 @@ pub fn show_database() -> Result<()>{
     let shoes = stmt.query_map([], |row| {
         Ok(Shoe {
             style_id: row.get(1)?,
-            name: row.get(2)?,
-            shoe_type: row.get(3)?,
-            model: row.get(4)?,
-            colorway: row.get(5)?,
-            image : row.get(6)?,
-            size: row.get(7)?,
-            release_date: row.get(8)?,
-            retail_price: row.get(9)?,
-            last_sold_price: row.get(10).unwrap_or("".to_string()),
-            extras: row.get(11).unwrap_or("".to_string()),
-            description: row.get(12).unwrap_or("".to_string()),
+            link: row.get(2)?,
+            name: row.get(3)?,
+            shoe_type: row.get(4)?,
+            model: row.get(5)?,
+            colorway: row.get(6)?,
+            image : row.get(7)?,
+            size: row.get(8)?,
+            release_date: row.get(9)?,
+            retail_price: row.get(10)?,
+            last_sold_price: row.get(11).unwrap_or("".to_string()),
+            extras: row.get(12).unwrap_or("".to_string()),
+            description: row.get(13).unwrap_or("".to_string()),
         })
     })?; 
-    println!("+------------+---------------------------------------------------------------+---------+------+");
-    println!("|  Style ID  |                            Name                               |  Price  | Size |");
-    println!("+------------+---------------------------------------------------------------+---------+------+");
+    println!("+-----------------+---------------------------------------------------------------+---------+------+");
+    println!("|  Style ID       |                            Name                               |  Price  | Size |");
+    println!("+-----------------+---------------------------------------------------------------+---------+------+");
     for shoe in shoes {
       
         match shoe {
-            Ok(success_shoe) =>  println!("| {} | {} | {} | {} |", fill_string_with_space(success_shoe.style_id, 10),fill_string_with_space(success_shoe.name, 61),fill_string_with_space(success_shoe.retail_price, 7),fill_string_with_space(success_shoe.size.to_string(), 4)),
+            Ok(success_shoe) =>  println!("| {} | {} | {} | {} |", fill_string_with_space(success_shoe.style_id, 15),fill_string_with_space(success_shoe.name, 61),fill_string_with_space(success_shoe.retail_price, 7),fill_string_with_space(success_shoe.size.to_string(), 4)),
             Err(e) => {
                 println!("{e}");
                 continue
@@ -114,7 +122,7 @@ pub fn show_database() -> Result<()>{
         }
         
     }
-    println!("+------------+---------------------------------------------------------------+---------+------+");
+    println!("+-----------------+---------------------------------------------------------------+---------+------+");
     Ok(())
 }
 
@@ -164,12 +172,39 @@ pub async fn add_shoe() -> Result<()> {
                     println!("What Size is the shoe you want to add in?");
                     let size = get_shoe_size().await;
                     let shoe_info = scrape::get_shoe_info(&link_vec[number as usize]).await;
-                    println!("{shoe_info:?}");
+                  
                     let conn = Connection::open("shoes.db")?;
 
-                    conn.execute("INSERT INTO shoes (style_id, name, type, model, colorway, image,size, release_date,retail_price,last_sold_price,extras,description) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)",
-                    params![shoe_info.get("style_id"),shoe_info.get("name"),shoe_info.get("type"),shoe_info.get("model"),shoe_info.get("colorway"),shoe_info.get("image"),size,shoe_info.get("release_date"),shoe_info.get("retail_price"),shoe_info.get("price"),shoe_info.get("extras"),shoe_info.get("description")])?;
+                    conn.execute("INSERT INTO shoes (style_id,link, name, type, model, colorway, image,size, release_date,retail_price,last_sold_price,extras,description) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12,?13)",
+                    params![shoe_info.get("style_id"),link_vec[number as usize],shoe_info.get("name"),shoe_info.get("type"),shoe_info.get("model"),shoe_info.get("colorway"),shoe_info.get("image"),size,convert_date(shoe_info.get("release_date")).await.unwrap(),shoe_info.get("retail_price"),shoe_info.get("price"),shoe_info.get("extras"),shoe_info.get("description")])?;
+                    let client = reqwest::Client::builder().build().unwrap();
+                    
+                    let shoe_data = json!({
+                        "style_id": shoe_info.get("style_id"),
+                        "link": link_vec[number as usize],
+                        "type": shoe_info.get("type"),
+                        "name": shoe_info.get("name"),
+                        
+                        "model": shoe_info.get("model"),
+                        "colorway": shoe_info.get("colorway"),
+                        "image": shoe_info.get("image"),
+                        "size": size,
+                        "release_date": convert_date(shoe_info.get("release_date")).await.unwrap(),
+                        "retail_price": shoe_info.get("retail_price"),
+                        "last_sold_price": shoe_info.get("price"),
+                        "extras": shoe_info.get("extras"),
+                        "description": shoe_info.get("description")
+                     
+                    });
+                  
+                    let response = client.post("http://127.0.0.1:8000/shoes/api")
+                    .header("Content-Type", "application/json")
 
+                    .json(&shoe_data)
+                    .send().await.unwrap();
+
+                  
+                    
                     //TODO: Captcha blocked
                     //let _ = scrape::get_prices(&link_vec[number as usize]).await; NOTE: UNIMPLEMENTED
                     println!(
@@ -194,13 +229,29 @@ pub async fn add_shoe() -> Result<()> {
     Ok(())
 }
 
+async fn convert_date(date_str: Option<&String>) -> Result<String, ParseError> {
+    match date_str {
+        Some(date) => {
+            let parsed_date = NaiveDate::parse_from_str(&(date.to_string()), "%d/%m/%Y")?;
+            let naive_time = NaiveTime::from_hms_opt(0, 0, 0).unwrap(); 
+            let naive_date_time = NaiveDateTime::new(parsed_date, naive_time);
+            let datetime_str = DateTime::<Utc>::from_utc(naive_date_time, Utc).to_string();
+            let trimmed_datetime = datetime_str.trim_end_matches(" UTC");
+            Ok(String::from(trimmed_datetime))
+        }
+        None => Ok("--".to_string())
+    }
+    
+}
+
+
 async fn get_shoe_size() -> String {
     loop {
         let mut input = String::new();
         std::io::stdin()
             .read_line(&mut input)
             .expect("Failed to read line");
-        let mut input_size = String::new();
+        let input_size ;
         if input.ends_with("\n") {
             input_size = input.trim_end_matches("\n").to_string();
         } else {
