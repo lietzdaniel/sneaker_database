@@ -4,34 +4,40 @@ use std::collections::HashMap;
 pub async fn scrape(shoe_name: &str) -> (Vec<String>, Vec<String>) {
     let query_shoe_name = shoe_name.replace(" ", "+");
     let mut headers = HeaderMap::new();
-    headers.insert("User-Agent", HeaderValue::from_str("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.138 Safari/537.36").unwrap());
+    headers.insert("User-Agent", HeaderValue::from_str("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0").unwrap());
     headers.insert("accept", HeaderValue::from_str("application/json").unwrap());
     headers.insert(
         "accept-language",
-        HeaderValue::from_str("en-US,en;q=0.9").unwrap(),
+        HeaderValue::from_str("en-US,en;q=0.9,de;q=0.8").unwrap(),
     );
     headers.insert("sec-fetch-dest", HeaderValue::from_str("empty").unwrap());
-    headers.insert("sec-fetch-mode", HeaderValue::from_str("'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.138 Safari/537.36',").unwrap());
+    headers.insert("sec-fetch-mode", HeaderValue::from_str("no-cors").unwrap());
     headers.insert(
         "sec-fetch-site",
         HeaderValue::from_str("cross-site").unwrap(),
     );
 
-    let client = reqwest::Client::builder().build().unwrap();
-    let response = client
-        .get(format!(
-            "https://stockx.com/en-gb/search?s={}",
-            query_shoe_name
-        ))
-        .headers(headers)
-        .send()
-        .await;
+    let client = reqwest::Client::builder()
+        .default_headers(headers)
+        .build()
+        .unwrap();
+
+    let url = format!("https://stockx.com/en-gb/search?s={}", query_shoe_name);
+    let response = client.get(&url).send().await;
 
     match response {
-        Ok(s) => return handle_grid_response(&s.text().await.unwrap()).await,
+        Ok(resp) => {
+            if resp.status().is_success() {
+                handle_grid_response(&resp.text().await.unwrap()).await
+            } else {
+                eprintln!("Failed request with status: {}", resp.status());
+                eprintln!("Response body: {}", resp.text().await.unwrap_or_default());
+                (Vec::new(), Vec::new())
+            }
+        }
         Err(e) => {
-            println!("{e}");
-            return ([].to_vec(), [].to_vec());
+            eprintln!("Request error: {}", e);
+            (Vec::new(), Vec::new())
         }
     }
 }
