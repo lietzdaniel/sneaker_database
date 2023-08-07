@@ -29,3 +29,19 @@ Currently unimplemented
 ## Quit the database manager
 
 Quits the program
+
+
+
+##Django API + Frontend
+
+Django:
+`cd sneaker/webserver`
+`python3 manage.py migrate` (only first time to create the DB)
+`python3 manage.py runserver`
+
+React in other Terminal:
+
+`cd sneaker_webserver/sneaker_website`
+`npm start`
+
+Then add any shoe you want via the Command Line Interface.
