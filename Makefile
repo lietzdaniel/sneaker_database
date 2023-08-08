@@ -11,6 +11,7 @@ run_server:
 	cd sneaker_webserver && poetry run ./manage.py runserver
 
 run_website:
+	cd sneaker_website && npm install 
 	cd sneaker_website && npm start
 
 add_shoe:
