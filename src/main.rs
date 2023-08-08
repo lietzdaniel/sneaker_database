@@ -48,7 +48,6 @@ async fn main() -> Result<()> {
             }
             "show" => {
                 return show_database();
-               
             }
             _ => {
                 println!("Unknown subcommand: {}", functionality);
@@ -193,10 +192,10 @@ pub async fn add_shoe() -> Result<()> {
                     let size = get_shoe_size().await;
                     let shoe_info = scrape::get_shoe_info(&link_vec[number as usize]).await;
 
-                    let conn = Connection::open("shoes.db")?;
+                    // let conn = Connection::open("shoes.db")?;
 
-                    conn.execute("INSERT INTO shoes (style_id,link, name, type, model, colorway, image,size, release_date,retail_price,last_sold_price,extras,description) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12,?13)",
-                    params![shoe_info.get("style_id"),link_vec[number as usize],shoe_info.get("name"),shoe_info.get("type"),shoe_info.get("model"),shoe_info.get("colorway"),shoe_info.get("image"),size,convert_date(shoe_info.get("release_date")).await.unwrap(),shoe_info.get("retail_price"),shoe_info.get("price"),shoe_info.get("extras"),shoe_info.get("description")])?;
+                    // conn.execute("INSERT INTO shoes (style_id,link, name, type, model, colorway, image,size, release_date,retail_price,last_sold_price,extras,description) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12,?13)",
+                    // params![shoe_info.get("style_id"),link_vec[number as usize],shoe_info.get("name"),shoe_info.get("type"),shoe_info.get("model"),shoe_info.get("colorway"),shoe_info.get("image"),size,convert_date(shoe_info.get("release_date")).await.unwrap(),shoe_info.get("retail_price"),shoe_info.get("price"),shoe_info.get("extras"),shoe_info.get("description")])?;
                     let client = reqwest::Client::builder().build().unwrap();
 
                     let shoe_data = json!({
@@ -223,21 +222,20 @@ pub async fn add_shoe() -> Result<()> {
                         .json(&shoe_data)
                         .send()
                         .await;
-                    
 
                     match response {
-                        Ok(_) => println!("Successfully added {} to your database!",shoe_info.get("name").unwrap()),
+                        Ok(_) => println!(
+                            "Successfully added {} to your database!",
+                            shoe_info.get("name").unwrap()
+                        ),
                         Err(e) => eprintln!("Something went wrong while adding your shoe to the database. Are you sure the Server is running?, Error: {}",e)
+                          
+                        
                     }
                     //TODO: Captcha blocked
                     // let _ = scrape::get_prices(&link_vec[number as usize]).await; #NOTE: UNIMPLEMENTED
-                    println!(
-                        "Successfully added {} to your database!",
-                        shoe_info.get("name").unwrap()
-                    );
-
+                    
                     break 'mainloop;
-                   
                 }
                 Err(_) => {
                     if input_str.len() == 2 && input_str.chars().nth(0).unwrap() == 'm' {

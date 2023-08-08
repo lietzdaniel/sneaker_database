@@ -32,16 +32,14 @@ Quits the program
 
 
 
-##Django API + Frontend
+## Django API + Frontend
 
-Django:
-`cd sneaker_webserver`
-`python3 manage.py migrate` (only first time to create the DB)
-`python3 manage.py runserver`
 
-React in other Terminal:
+Use the Makefile in order to set everything up.
 
-`cd sneaker_webserver/sneaker_website`
-`npm start`
-
-Then add any shoe you want via the Command Line Interface.<>
+- `make install` to install the requirements for the Django Server
+- `make run_server` to run the Django Server
+- `make run_website` in other Terminal to run the React Frontend
+- `make add_shoe` to add a shoe to your database
+- `make run_commandline` to run the command line text adventure
+- `make show_database` to show your current database
