@@ -1,10 +1,11 @@
 mod scrape;
-use rusqlite::{params, Connection, Result};
+
+use rusqlite::{ Connection, Result};
 use serde_json::json;
-
+use reqwest::Response;
 use chrono::format::ParseError;
-use chrono::{DateTime, Local, NaiveDate, NaiveDateTime, NaiveTime, Utc};
-
+use chrono::{DateTime,  NaiveDate, NaiveDateTime, NaiveTime, Utc};
+use serde::Deserialize;
 #[tokio::main]
 async fn main() -> Result<()> {
     let conn = Connection::open("shoes.db")?;
@@ -47,7 +48,7 @@ async fn main() -> Result<()> {
                 return add_shoe().await;
             }
             "show" => {
-                return show_database();
+                return show_database().await;
             }
             _ => {
                 println!("Unknown subcommand: {}", functionality);
@@ -71,8 +72,8 @@ async fn main() -> Result<()> {
             Ok(number) => match number {
                 1 => return add_shoe().await,
                 2 => todo!(),
-                3 => todo!(),
-                4 => return show_database(),
+                3 => return remove_shoe(),
+                4 => return show_database().await,
                 5 => todo!(),
                 6 => break,
                 _ => continue,
@@ -86,10 +87,30 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-pub fn show_database() -> Result<()> {
-    let conn = Connection::open("shoes.db")?;
-    let mut stmt = conn.prepare("SELECT * from shoes")?;
-    #[derive(Debug)]
+pub fn remove_shoe() -> Result<()>{
+    
+    Ok(())
+}
+
+pub async fn show_database() -> Result<()> {
+    let client = reqwest::Client::builder().build().unwrap();
+
+    let response = client
+        .get("http://127.0.0.1:8000/shoes/api")
+        .header("Content-Type", "application/json")
+        .send()
+        .await;
+    let mut response_text: Response;
+    match response {
+        Ok(resp) =>{ println!("Got Data from Server, showing your database...");
+                            response_text = resp;
+                            },
+        Err(e) => {
+            println!("Error getting data from the Server, are you sure it's running?");
+            return Ok(());
+        }
+    }
+    #[derive(Debug, Deserialize)]
     struct Shoe {
         style_id: String,
         link: String,
@@ -101,49 +122,37 @@ pub fn show_database() -> Result<()> {
         size: String,
         release_date: String,
         retail_price: String,
-        last_sold_price: String,
-        extras: String,
-        description: String,
+        last_sold_price: Option<String>,
+        extras: Option<String>,
+        description: Option<String>,
+    }
+    let shoes: Result<Vec<Shoe>, _> = response_text.json().await;
+    let mut shoe_vec: Vec<Shoe>;
+    match shoes {
+        Ok(success_vec) => shoe_vec = success_vec,
+        Err(e) => {
+            eprintln!("Error parsing data from the Server. Error: {}",e);
+            return Ok(());
+        }
     }
 
-    let shoes = stmt.query_map([], |row| {
-        Ok(Shoe {
-            style_id: row.get(1)?,
-            link: row.get(2)?,
-            name: row.get(3)?,
-            shoe_type: row.get(4)?,
-            model: row.get(5)?,
-            colorway: row.get(6)?,
-            image: row.get(7)?,
-            size: row.get(8)?,
-            release_date: row.get(9)?,
-            retail_price: row.get(10)?,
-            last_sold_price: row.get(11).unwrap_or("".to_string()),
-            extras: row.get(12).unwrap_or("".to_string()),
-            description: row.get(13).unwrap_or("".to_string()),
-        })
-    })?;
     println!("+-----------------+---------------------------------------------------------------+---------+------+");
     println!("|  Style ID       |                            Name                               |  Price  | Size |");
     println!("+-----------------+---------------------------------------------------------------+---------+------+");
-    for shoe in shoes {
-        match shoe {
-            Ok(success_shoe) => println!(
+    for shoe in shoe_vec {
+        println!(
                 "| {} | {} | {} | {} |",
-                fill_string_with_space(success_shoe.style_id, 15),
-                fill_string_with_space(success_shoe.name, 61),
-                fill_string_with_space(success_shoe.retail_price, 7),
-                fill_string_with_space(success_shoe.size.to_string(), 4)
-            ),
-            Err(e) => {
-                println!("{e}");
-                continue;
-            }
-        }
+                fill_string_with_space(shoe.style_id, 15),
+                fill_string_with_space(shoe.name, 61),
+                fill_string_with_space(shoe.retail_price, 7),
+                fill_string_with_space(shoe.size.to_string(), 4)
+            )
+        
     }
     println!("+-----------------+---------------------------------------------------------------+---------+------+");
     Ok(())
 }
+
 
 pub fn fill_string_with_space(mut string: String, length: usize) -> String {
     while string.len() < length {
@@ -224,10 +233,15 @@ pub async fn add_shoe() -> Result<()> {
                         .await;
 
                     match response {
-                        Ok(_) => println!(
-                            "Successfully added {} to your database!",
-                            shoe_info.get("name").unwrap()
-                        ),
+                        Ok(resp) => {
+                            if( resp.status() == 201) {
+                            println!("Successfully added {} to your database!",shoe_info.get("name").unwrap());
+                        } else {
+                            eprintln!("Something went wrong while adding your shoe to the database. Here is the JSON for debugging: \n {}",shoe_data)
+                        }
+                            
+                    },
+                        
                         Err(e) => eprintln!("Something went wrong while adding your shoe to the database. Are you sure the Server is running?, Error: {}",e)
                           
                         
