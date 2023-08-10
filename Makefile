@@ -5,9 +5,8 @@ test:
 	cd sneaker_webserver && poetry run pytest
 
 run_server: 
-	
-	cd sneaker_webserver && poetry run ./manage.py migrate
 	cd sneaker_webserver && poetry run ./manage.py makemigrations
+	cd sneaker_webserver && poetry run ./manage.py migrate
 	cd sneaker_webserver && poetry run ./manage.py runserver
 
 run_website:
