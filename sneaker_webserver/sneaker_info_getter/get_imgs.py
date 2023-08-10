@@ -22,7 +22,7 @@ def get_angleimages_from_original_image(original_image_link,style_id):
            
              
                 image = Image.open(os.path.join(PROJECT_PATH,style_id,"img",f"{i}.png"))
-                max_width = 1800
+                max_width = 1200
                 width_percent = (max_width/float(image.size[0])) 
                 new_height = int((float(image.size[1])*float(width_percent))) # Keep Aspect Ratio
                 resized_image = image.resize((max_width,new_height),Image.Resampling.LANCZOS)
@@ -36,7 +36,7 @@ def get_angleimages_from_original_image(original_image_link,style_id):
                     shutil.copyfileobj(response.raw, file)  
                     logging.info(msg=f"Successfully saved image {i}")
                 image = Image.open(os.path.join(PROJECT_PATH,style_id,"img",f"{i}.png"))
-                max_width = 1800
+                max_width = 1200
                 width_percent = (max_width/float(image.size[0])) 
                 new_height = int((float(image.size[1])*float(width_percent))) # Keep Aspect Ratio
                 resized_image = image.resize((max_width,new_height),Image.Resampling.LANCZOS)

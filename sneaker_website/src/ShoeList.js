@@ -7,7 +7,7 @@ import './ShoeOverlay.css';
 
 function ShoeList() {
   const [shoes, setShoes] = useState([]);
-  const [selectedShoe, setSelectedShoe] = useState(null); 
+  const [selectedShoe, setSelectedShoe] = useState(null);
   function handleShoeClick(shoe) {
     console.log('Clicked shoe:', shoe);
     setSelectedShoe(shoe);
@@ -22,17 +22,52 @@ function ShoeList() {
       });
   }, []);
   const [imageLoaded, setImageLoaded] = React.useState(true);
+
   function ShoeOverlay({ shoe, onClose }) {
-    const gifImage = new Image();
-      gifImage.src = 'http://127.0.0.1:8000/shoes/api/gif/'+shoe.style_id;
-      gifImage.onload = () => {
+    const [prices, setPrices] = useState(null);
+    const [lastSale, setLastSale] = useState(0);
+    useEffect(() => {
+  
+      axios.get(`http://127.0.0.1:8000/shoes/api/json/${shoe.style_id}`)
+        .then(response => {
+          console.log('Fetched JSON data:', response.data);
+          setPrices(response.data); // Set JSON data to the state
+        })
+        .catch(error => {
+          console.error('Error fetching data:', error);
+        });
+    }, [shoe.style_id]);
+   
+    useEffect(() => {
+      if (prices != null){
+      if (prices.variants) {
+        prices.variants.forEach(function (variant) {
+          var sizeChart = variant.sizeChart;
+          sizeChart.displayOptions.forEach(function (display) {
+            if (display.type === "eu") {
+             
+              if (display.size === "EU " + shoe.size) {
+                if (variant.market.salesInformation) {
+                  setLastSale(variant.market.salesInformation.lastSale);
+                }
+              } 
+            }
+          });
+        });
+      }
+    }}, [prices,shoe.size]);
+  
     
-        setImageLoaded(true);
-      };
-      gifImage.onerror = () => {
-      
-        setImageLoaded(false);
-      };
+    const gifImage = new Image();
+    gifImage.src = 'http://127.0.0.1:8000/shoes/api/gif/' + shoe.style_id;
+    gifImage.onload = () => {
+
+      setImageLoaded(true);
+    };
+    gifImage.onerror = () => {
+
+      setImageLoaded(false);
+    };
     
     return (
       <div className="overlay">
@@ -40,26 +75,29 @@ function ShoeList() {
           <button className="close-button" onClick={onClose}>
             Close
           </button>
-          <h2>{shoe.name}</h2>
-          {imageLoaded ? (
-          <img src={'http://127.0.0.1:8000/shoes/api/gif/'+shoe.style_id} alt={shoe.name} />
-        ) : (
-          <img src={shoe.image} alt={shoe.name} />
-        )}
-          { <div className="shoe-information"> 
-          <a href={"https://stockx.com" + shoe.link}>
-        <h1>{shoe.name}</h1>
-        <p>{shoe.style_id}</p>
-        <p>{shoe.size}</p>
-        <p>{shoe.retail_price}</p>
           
-        </a></div>}
+          {imageLoaded ? (
+            <img src={'http://127.0.0.1:8000/shoes/api/gif/' + shoe.style_id} alt={shoe.name} />
+          ) : (
+            <img src={shoe.image} alt={shoe.name} />
+          )}
+          { <div style={{textAlign: 'left'}} className="shoe-information">
+              <a href={"https://stockx.com" + shoe.link}>
+              <h1 style={{ fontSize: 50 ,fontWeight: 'bold'} }>{shoe.shoe_type}</h1>
+              <p style={{ fontSize: 50,fontWeight: 'bold' } }>{shoe.model}</p>
+              </a>
+              <p style={{ fontSize: 50 }}>Style: {shoe.style_id}</p>
+              <p style={{ fontSize: 50 }}>Retail Price: {shoe.retail_price}</p>
+              <p style={{ fontSize: 50 }}>Your Size: {shoe.size}</p>
+              <p style={{ fontSize: 50 }}>Last Sale: {lastSale}€</p>
+            </div>
+            }
         </div>
       </div>
     );
   }
-  
-   return (
+
+  return (
     <div className="shoe-list-container">
       <div className="shoe-list">
         {shoes.map(shoe => (
