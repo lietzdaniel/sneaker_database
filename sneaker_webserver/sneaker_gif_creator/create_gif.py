@@ -1,9 +1,10 @@
 
 import os
 from PIL import Image
-from get_imgs import get_angleimages_from_original_image
+from .get_imgs import get_angleimages_from_original_image
 import logging
 import sys
+
 PROJECT_PATH = os.path.join(".","sneaker_gif_creator")
 logging.basicConfig(level=logging.DEBUG, stream=sys.stdout)
 logger = logging.getLogger()
@@ -15,7 +16,7 @@ def make_gif(link,style_id: str):
         logger.info(f"Downloading images for {style_id}.")
         get_angleimages_from_original_image(link,style_id)
         logger.info(f"Successfully downloaded images for {style_id}.")
-    elif not os.path.exists(os.path.join(PROJECT_PATH,style_id,"gif")):
+    if not os.path.exists(os.path.join(PROJECT_PATH,style_id,"gif")):
         logger.info(f"Creating gif for {style_id}.")
         image_path = os.path.join(PROJECT_PATH,style_id,"img")
         frames = [Image.open(f"{image_path}/{i}.png") for i in range(1,36)]

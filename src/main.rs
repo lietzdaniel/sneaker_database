@@ -210,7 +210,7 @@ pub async fn add_shoe() -> Result<()> {
                     let shoe_data = json!({
                         "style_id": shoe_info.get("style_id"),
                         "link": link_vec[number as usize],
-                        "type": shoe_info.get("type"),
+                        "shoe_type": shoe_info.get("type"),
                         "name": shoe_info.get("name"),
 
                         "model": shoe_info.get("model"),
