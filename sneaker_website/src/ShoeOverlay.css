@@ -10,7 +10,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000; /* Adjust z-index as needed */
+  z-index: 1000; 
 }
 
 .overlay-content {
@@ -22,7 +22,11 @@
   overflow: auto;
   position: relative;
 }
+.shoe-information {
 
+  float: right;
+  padding: 20px;
+}
 .close-button {
   position: absolute;
   top: 10px;
@@ -30,4 +34,5 @@
   background: none;
   border: none;
   cursor: pointer;
+
 }

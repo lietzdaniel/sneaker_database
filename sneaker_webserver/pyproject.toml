@@ -11,6 +11,10 @@ djangorestframework = "^3.14.0"
 django-cors-headers = "^4.2.0"
 Pillow = "^10.0.0"
 requests = "^2.31.0"
+httpx = {extras = ["http2"], version = "^0.24.1"}
+nested-lookup = "^0.2.25"
+parsel = "^1.8.1"
+asgiref = "^3.7.2"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"

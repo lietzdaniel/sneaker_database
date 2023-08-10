@@ -33,6 +33,7 @@ function ShoeList() {
       
         setImageLoaded(false);
       };
+    
     return (
       <div className="overlay">
         <div className="overlay-content">
@@ -45,7 +46,14 @@ function ShoeList() {
         ) : (
           <img src={shoe.image} alt={shoe.name} />
         )}
-          {/* Additional information about the shoe */}
+          { <div className="shoe-information"> 
+          <a href={"https://stockx.com" + shoe.link}>
+        <h1>{shoe.name}</h1>
+        <p>{shoe.style_id}</p>
+        <p>{shoe.size}</p>
+        <p>{shoe.retail_price}</p>
+          
+        </a></div>}
         </div>
       </div>
     );

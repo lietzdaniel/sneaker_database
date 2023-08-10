@@ -5,11 +5,15 @@ from rest_framework import status
 from .models import Shoe
 from django.http import HttpResponse
 from .serializers import ShoeSerializer
-from sneaker_gif_creator.create_gif import make_gif
+from sneaker_info_getter.create_gif import make_gif
+from sneaker_info_getter.get_prices import create_json
+from django.http import JsonResponse
 from multiprocessing import Process
 import os
+import asyncio
+import json
 
-GIF_PATH = os.path.join(".","sneaker_gif_creator")
+INFO_PATH = os.path.join(".","sneaker_info_getter")
 class ShoeListApiView(APIView):
     def get(self, request):
         try:
@@ -40,6 +44,8 @@ class ShoeListApiView(APIView):
         serializer = ShoeSerializer(data=data)
         if serializer.is_valid():
             serializer.save()
+            create_json(data['link'], data['style_id'])
+            
             gif_process = Process(target=make_gif,args=(data["image"],data["style_id"]))
             gif_process.start()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -52,7 +58,8 @@ class GetShoeGifApiView(APIView):
         try:
             shoe = Shoe.objects.get(style_id=style_id)
             style_id = style_id.replace(" ","-")
-            gif_path = os.path.join(GIF_PATH,style_id,"gif")
+            style_id = style_id.replace("/","-")
+            gif_path = os.path.join(INFO_PATH,style_id,"gif")
             if not os.path.exists(gif_path):
                 return Response({'error': 'Shoe not found'}, status=404)
             gif_file_path = os.path.join(gif_path,f"{style_id}.gif")
@@ -63,5 +70,21 @@ class GetShoeGifApiView(APIView):
 
 
                 return response
+        except Shoe.DoesNotExist:
+            return Response({'error': 'Shoe not found'}, status=404)
+        
+class GetShoePricesApiView(APIView):
+    def get(self, request, style_id):
+        try:
+            shoe = Shoe.objects.get(style_id=style_id)
+        
+            json_path = os.path.join(INFO_PATH,style_id,"prices")
+            if not os.path.exists(json_path):
+                return Response({'error': 'Prices not found'}, status=404)
+            json_file_path = os.path.join(json_path,f"{style_id}.json")
+            shoe_json = open(json_file_path)
+            shoe_prices = json.load(shoe_json)
+
+            return  JsonResponse(shoe_prices)
         except Shoe.DoesNotExist:
             return Response({'error': 'Shoe not found'}, status=404)

@@ -206,13 +206,13 @@ pub async fn add_shoe() -> Result<()> {
                     // conn.execute("INSERT INTO shoes (style_id,link, name, type, model, colorway, image,size, release_date,retail_price,last_sold_price,extras,description) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12,?13)",
                     // params![shoe_info.get("style_id"),link_vec[number as usize],shoe_info.get("name"),shoe_info.get("type"),shoe_info.get("model"),shoe_info.get("colorway"),shoe_info.get("image"),size,convert_date(shoe_info.get("release_date")).await.unwrap(),shoe_info.get("retail_price"),shoe_info.get("price"),shoe_info.get("extras"),shoe_info.get("description")])?;
                     let client = reqwest::Client::builder().build().unwrap();
-
+                    let mut updated_style_id = shoe_info.get("style_id").unwrap().replace(" ", "-");
+                    updated_style_id = updated_style_id.replace("/", "-");
                     let shoe_data = json!({
-                        "style_id": shoe_info.get("style_id"),
+                        "style_id": updated_style_id,
                         "link": link_vec[number as usize],
                         "shoe_type": shoe_info.get("type"),
                         "name": shoe_info.get("name"),
-
                         "model": shoe_info.get("model"),
                         "colorway": shoe_info.get("colorway"),
                         "image": shoe_info.get("image"),
