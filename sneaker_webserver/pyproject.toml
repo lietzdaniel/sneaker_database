@@ -9,6 +9,8 @@ python = "^3.10"
 Django = "^4.2.4"
 djangorestframework = "^3.14.0"
 django-cors-headers = "^4.2.0"
+Pillow = "^10.0.0"
+requests = "^2.31.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"
