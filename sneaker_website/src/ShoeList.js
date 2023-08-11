@@ -26,6 +26,7 @@ function ShoeList() {
   function ShoeOverlay({ shoe, onClose }) {
     const [prices, setPrices] = useState(null);
     const [lastSale, setLastSale] = useState(0);
+    
     useEffect(() => {
   
       axios.get(`http://127.0.0.1:8000/shoes/api/json/${shoe.style_id}`)
