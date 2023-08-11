@@ -13,6 +13,12 @@ run_website:
 	cd sneaker_website && npm install 
 	cd sneaker_website && npm start
 
+run:
+	$(MAKE) -C sneaker_webserver run &
+	$(MAKE) -C sneaker_website run
+	
+	
+
 add_shoe:
 	cargo run add
 
